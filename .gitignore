@@ -1,0 +1,17 @@
+# build toolchain and outputs
+tools/
+build/
+*.apk
+android/assets/
+android/res/mipmap-mdpi/
+android/res/mipmap-hdpi/
+android/res/mipmap-xhdpi/
+android/res/mipmap-xxhdpi/
+android/res/mipmap-xxxhdpi/
+# signing key: never commit
+keys/
+# test and preview scratch
+test_page.html
+shots/
+v1/
+__pycache__/

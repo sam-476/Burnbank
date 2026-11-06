@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- window and bars before the page paints: the Dark theme's gray -->
+    <color name="bg">#FF525252</color>
+    <color name="accent">#FFE2BC5A</color>
+    <!-- launcher icon keeps its own charcoal plate and amber mark -->
+    <color name="icon_bg">#FF14161B</color>
+</resources>
