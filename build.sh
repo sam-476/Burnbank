@@ -9,8 +9,8 @@ ANDROID_JAR=$T/android.jar
 APKSIGNER=$T/node_modules/@postar/apktool-node/lib/apksigner.jar
 JAR2DEX=$T/dex2jar/dex-tools-v2.4/d2j-jar2dex.sh
 PKG=app/burnbank2
-VCODE=1
-VNAME=2.0
+VCODE=2
+VNAME=2.1
 
 rm -rf build && mkdir -p build/gen build/classes
 python3 make_icons.py
