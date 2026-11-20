@@ -121,7 +121,7 @@ with sync_playwright() as p:
     check(bg(pg) == GRAY, "default background is the gray #525252")
     check(pg.evaluate("getComputedStyle(document.body).color") == "rgb(243, 238, 225)", "default text colour is Dark's cream")
     check(pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()") == "#F6BE2E", "accent is Dark's gold")
-    check("fractalNoise" in pg.evaluate("getComputedStyle(document.body).backgroundImage") and pg.evaluate("getComputedStyle(document.body).backgroundSize") == "600px 600px, auto", "Dark paints the cloud layer (inline SVG, tiled)")
+    check("fractalNoise" in pg.evaluate("getComputedStyle(document.body).backgroundImage") and pg.evaluate("getComputedStyle(document.body).backgroundSize") == "800px 800px, auto" and pg.evaluate("getComputedStyle(document.body).backgroundRepeat").startswith("no-repeat"), "Dark paints the cloud layer (inline SVG, one square tile covering the screen, no seam)")
     check(pg.evaluate("getComputedStyle(document.querySelector('#t-balance')).webkitBackgroundClip") != "text" and pg.evaluate("getComputedStyle(document.querySelector('#t-balance')).color") == "rgb(255, 149, 127)", "Dark: a balance in debt is plain red, not gold gradient")
     check(pg.locator("#m-themes").is_hidden() and pg.locator("#m-themehint").inner_text() == "Change", "theme grid hidden until the button is tapped")
     pg.click("#btn-themes")
@@ -364,6 +364,154 @@ with sync_playwright() as p:
     check(skin(pg) == "dark" and bg(pg) == GRAY and state(pg)["theme"] == "dark", "stored theme 'default' becomes Dark on load, even with the phone in light mode")
     check(pg.locator("#in-adv").is_checked(), "other settings (Advanced) untouched by the theme mapping")
     check(errors == [], "no page errors (default->dark): " + "; ".join(errors))
+    ctx.close()
+
+    # ---------- Part 5: Progress tab (v2.1) ----------
+    # Seeded month, worked by hand: start 80 kg on 26 Oct, TDEE 2400, every day eats 1,630 (net +770 = 0.1 kg),
+    # except 1 and 2 Nov, left unlogged. Today is Fri 20 Nov.
+    # Closed days before today: 25 calendar, 23 logged -> 17,710 kcal -> 2.3 kg -> estimate now 77.7 kg.
+    # Last 14 days (6-19 Nov) all logged -> 770/day -> 0.7 kg/week. Goal 3 kg -> 77.0 kg, 0.7 kg left -> 7 days -> 27 Nov.
+    # Weigh-ins: 10 Nov 78.9 (estimate that morning: 13 logged days -> 78.7, +0.2), 20 Nov 78.4 (vs 77.7, +0.7).
+    # Scale moved 1.6 of the estimated 2.3 -> 70%.
+    def day(key, p=None):
+        return {"date": key, "tdee": 2400, "supp": {"vit": False, "other": False},
+                "entries": [{"id": "e" + key, "type": "food", "kcal": 1630, "label": "Food", "time": "12:00", "p": p, "c": None, "f": None}]}
+    import datetime as dt
+    hist = []
+    d0 = dt.date(2026, 10, 26)
+    for i in range(25):
+        k = (d0 + dt.timedelta(days=i)).isoformat()
+        if k in ("2026-11-01", "2026-11-02"): continue
+        hist.append(day(k, 150 if k >= "2026-11-13" else None))
+    seed = {"tdee": 2400, "unit": "kg", "goalKg": 3, "startDate": "2026-10-26", "todayKey": "2026-11-20",
+            "today": {"entries": [], "supp": {"vit": False, "other": False}}, "history": hist, "favs": [], "recap": None,
+            "notif": True, "theme": "dark", "adv": False, "moveSeen": True, "calc": None,
+            "startWeight": {"date": "2026-10-26", "kg": 80}, "weighIns": [{"date": "2026-11-10", "kg": 78.9}, {"date": "2026-11-20", "kg": 78.4}]}
+    ctx = b.new_context(viewport={"width": 390, "height": 800}, color_scheme="dark")
+    pg = ctx.new_page(); errors = []
+    pg.on("pageerror", lambda e: errors.append(str(e)))
+    pg.clock.install(time="2026-11-20T10:00:00")
+    pg.goto(url)
+    pg.evaluate("v => {localStorage.clear(); localStorage.setItem('burnbank.v2', v)}", json.dumps(seed))
+    pg.wait_for_function("localStorage.getItem('burnbank.v2') !== null")
+    pg.reload(); pg.wait_for_timeout(300)
+    nav = pg.evaluate("(() => {const n=document.querySelector('nav.tabs');return [n.querySelectorAll('button').length, n.scrollWidth<=n.clientWidth, [...n.querySelectorAll('button')].map(b=>b.textContent.trim())]})()")
+    check(nav[0] == 5 and nav[1] and nav[2] == ["Today", "Goal", "Progress", "Macros", "Menu"], "five tabs, in order, fit a 390 px phone: %s" % nav[2])
+    pg.click("nav button[data-view=progress]")
+    T = lambda s: pg.locator(s).inner_text()
+    check(T("#p-now") == "77.7 kg", "estimate now 77.7 kg: " + T("#p-now"))
+    check(T("#p-herosub") == "Started at 80.0 kg on 26 Oct · −2.3 kg so far", "hero line: " + T("#p-herosub"))
+    check(T("#p-start") == "80.0 kg" and T("#p-change") == "−2.3 kg", "start 80.0, change −2.3")
+    check(T("#p-rate") == "−0.7 kg/week", "rate −0.7 kg/week: " + T("#p-rate"))
+    check(T("#p-goalw") == "77.0 kg" and T("#p-left") == "0.7 kg", "goal weight 77.0, 0.7 left")
+    check(T("#p-eta") == "27 Nov · ~7 days", "goal around 27 Nov: " + T("#p-eta"))
+    check(T("#p-last") == "78.4 kg" and T("#p-said") == "77.7 kg", "last weigh-in 78.4 vs calories 77.7")
+    check(T("#p-diff") == "+0.7 kg · scale heavier", "difference: " + T("#p-diff"))
+    check(T("#p-share") == "70%", "scale change vs estimate 70%: " + T("#p-share"))
+    rows = pg.locator("#p-weighs li").all_inner_texts()
+    check(len(rows) == 2 and "78.9 kg\ncalories 78.7" in rows[1] and "+0.2 kg" in rows[1], "weigh-in list, newest first, 10 Nov vs 78.7: %s" % rows)
+    check(pg.locator("#p-svg path.est").count() == 1 and pg.locator("#p-svg path.proj").count() == 1 and pg.locator("#p-svg circle.dot").count() == 2 and pg.locator("#p-svg line.goalline").count() == 1,
+          "chart: estimate line, projection, 2 scale dots, goal line")
+    check(T("#p-readout") == "Today · calories 77.7 kg · scale 78.4 kg", "readout defaults to today: " + T("#p-readout"))
+    # 4W range: start clamps to 26 Oct (25 days back), 25 days ahead; tap 3 days after today
+    def tap_day(i, span):
+        box = pg.locator("#p-svg").bounding_box()
+        x = box["x"] + (36 + i / span * 296) / 340 * box["width"]
+        pg.mouse.click(x, box["y"] + box["height"] / 2)
+    tap_day(28, 50)
+    check(T("#p-readout") == "Mon 23 Nov · at this rate 77.4 kg", "tap 23 Nov -> projection 77.4: " + T("#p-readout"))
+    tap_day(15, 50)
+    check(T("#p-readout") == "Tue 10 Nov · calories 78.7 kg · scale 78.9 kg", "tap 10 Nov -> both values: " + T("#p-readout"))
+    tap_day(45, 50)
+    check(T("#p-readout") == "Thu 10 Dec · nothing logged", "past the goal the projection stops: " + T("#p-readout"))
+    # projection is clipped at the goal: its end y equals the goal line's y
+    pe = pg.evaluate("(() => {const d=document.querySelector('#p-svg path.proj').getAttribute('d');const y=+d.split(' ').pop();return [y,+document.querySelector('#p-svg line.goalline').getAttribute('y1')]})()")
+    check(abs(pe[0] - pe[1]) < 0.11, "projection ends on the goal line: %s" % pe)
+    pg.click("#p-ranges .chip[data-r='0']")
+    check(pg.locator("#p-ranges .chip[data-r='0']").get_attribute("aria-pressed") == "true" and T("#p-readout").startswith("Today"), "All range selected, readout back to today")
+    # averages and weeks
+    avg = pg.locator("#p-avg > *").all_inner_texts()
+    cells = [avg[i:i + 4] for i in range(0, len(avg), 4)]
+    check(cells[1] == ["Net a day", "+770", "+770", "+770"] and cells[2] == ["Eaten", "1,630", "1,630", "1,630"], "averages: net and eaten %s" % cells[1:3])
+    check(cells[4] == ["Protein", "150 g", "150 g", "150 g"] and cells[5] == ["Days logged", "7/7", "23/25", "23/25"], "averages: protein and days logged %s" % cells[4:6])
+    weeks = pg.locator("#p-weeks li").all_inner_texts()
+    check(len(weeks) == 4 and weeks[0].startswith("This week") and "4 days · −0.40 kg" in weeks[0] and "+3,080" in weeks[0], "this week row: %s" % weeks[:1])
+    check("7 days · −0.70 kg" in weeks[1] and "6 days" in weeks[2] and weeks[3].startswith("26 Oct"), "earlier weeks: %s" % weeks[1:])
+    # lb: everything converts, maths per lb is 3,500 kcal
+    pg.click("nav button[data-view=menu]"); pg.click("#u-lb"); pg.click("nav button[data-view=progress]")
+    check(T("#p-now") == "171.3 lb" and T("#p-start") == "176.4 lb" and pg.input_value("#in-sw") == "176.4", "lb: start 176.4, now 171.3: " + T("#p-now"))
+    pg.click("nav button[data-view=menu]"); pg.click("#u-kg"); pg.click("nav button[data-view=progress]")
+    check(T("#p-now") == "77.7 kg", "back to kg")
+    # weigh-in: bounds, future date, replace the same day, remove
+    pg.fill("#in-wkg", "20"); pg.click("#btn-weigh")
+    check(len(state(pg)["weighIns"]) == 2, "20 kg rejected")
+    pg.fill("#in-wdate", "2026-11-25"); pg.fill("#in-wkg", "78"); pg.click("#btn-weigh")
+    check(len(state(pg)["weighIns"]) == 2, "future date rejected")
+    pg.fill("#in-wdate", "2026-11-20"); pg.fill("#in-wkg", "78.2"); pg.click("#btn-weigh")
+    st = state(pg)
+    check(len(st["weighIns"]) == 2 and st["weighIns"][-1] == {"date": "2026-11-20", "kg": 78.2} and T("#p-diff") == "+0.5 kg · scale heavier", "same day replaces: 78.2, diff +0.5")
+    pg.fill("#in-wdate", "2026-11-15"); pg.fill("#in-wkg", "78.5"); pg.click("#btn-weigh")
+    check([w["date"] for w in state(pg)["weighIns"]] == ["2026-11-10", "2026-11-15", "2026-11-20"], "backdated weigh-in slots in by date")
+    pg.click("#p-weighs button[data-date='2026-11-15']")
+    check([w["date"] for w in state(pg)["weighIns"]] == ["2026-11-10", "2026-11-20"], "remove a weigh-in")
+    pg.reload(); pg.wait_for_timeout(300); pg.click("nav button[data-view=progress]")
+    check(T("#p-last") == "78.2 kg" and T("#p-now") == "77.7 kg", "weights persist after reload")
+    # midnight: today's food closes, the estimate moves 0.1 kg
+    pg.click("nav button[data-view=today]"); pg.fill("#in-kcal", "1630"); pg.click("#btn-add")
+    pg.click("nav button[data-view=progress]")
+    check(T("#p-now") == "77.7 kg", "today's pending day doesn't move the estimate yet")
+    pg.clock.set_fixed_time("2026-11-21T00:00:05"); pg.wait_for_timeout(1500); pg.click("#r-ok")
+    check(T("#p-now") == "77.6 kg", "after midnight the estimate is 77.6: " + T("#p-now"))
+    # backup round trip carries the weights; a v1 backup restores with none; junk is cleaned
+    backup = json.dumps(state(pg))
+    pg.click("nav button[data-view=menu]"); pg.click("#btn-showrestore"); pg.fill("#in-restore", V1); pg.click("#btn-restore"); pg.wait_for_timeout(1200); pg.click("#r-ok")
+    st = state(pg)
+    check(st["startWeight"] is None and st["weighIns"] == [], "v1 backup restores with no weights")
+    pg.click("nav button[data-view=progress]")
+    check(pg.locator("#p-chartcard").is_hidden() and pg.locator("#p-weighcard").is_hidden() and T("#p-now") == "—", "no start weight: chart and weigh-in hidden")
+    check(pg.evaluate("document.getElementById('p-startcard').previousElementSibling.id") == "p-hero", "setup card moves up under the hero")
+    check(pg.locator("#p-weeks li").count() >= 1, "weeks still shown without a start weight")
+    pg.click("nav button[data-view=menu]"); pg.click("#btn-showrestore"); pg.fill("#in-restore", backup); pg.click("#btn-restore"); pg.wait_for_timeout(1200)
+    st = state(pg)
+    check(st["startWeight"] == {"date": "2026-10-26", "kg": 80} and len(st["weighIns"]) == 2, "backup round trip keeps the weights")
+    junk = json.loads(backup); junk["startWeight"] = {"date": "nope", "kg": 80}
+    junk["weighIns"] = [{"date": "2026-11-03", "kg": "x"}, {"date": "2026-11-04", "kg": 900}, {"date": "2026-11-05", "kg": 79}, {"date": "2026-11-05", "kg": 79.2}, None]
+    pg.click("#btn-showrestore"); pg.fill("#in-restore", json.dumps(junk)); pg.click("#btn-restore"); pg.wait_for_timeout(1200)
+    st = state(pg)
+    check(st["startWeight"] is None and st["weighIns"] == [{"date": "2026-11-05", "kg": 79.2}], "junk weights cleaned on restore: %s" % st["weighIns"])
+    # setup from scratch: bounds, future date, then the chart appears and the card drops to the bottom
+    pg.click("nav button[data-view=progress]")
+    check(pg.input_value("#in-swdate") == "2026-10-26", "start date defaults to the app's start date")
+    pg.fill("#in-sw", "10"); pg.click("#btn-start")
+    check(state(pg)["startWeight"] is None, "10 kg rejected")
+    pg.fill("#in-sw", "80"); pg.fill("#in-swdate", "2026-12-01"); pg.click("#btn-start")
+    check(state(pg)["startWeight"] is None, "future start date rejected")
+    pg.fill("#in-swdate", "2026-10-26"); pg.click("#btn-start")
+    check(state(pg)["startWeight"] == {"date": "2026-10-26", "kg": 80} and pg.locator("#p-chartcard").is_visible(), "start weight saved, chart shown")
+    check(pg.evaluate("document.getElementById('view-progress').lastElementChild.id") == "p-startcard", "setup card moves to the bottom")
+    # a start date later than history: only days from then count
+    pg.fill("#in-swdate", "2026-11-16"); pg.click("#btn-start")
+    check(T("#p-now") == "79.5 kg", "start on 16 Nov counts 16-20 Nov only (5 days) -> 79.5: " + T("#p-now"))
+    check(T("#p-share") == "Too early to tell" or pg.locator("#p-acccard").is_hidden(), "no comparable or too-small change -> no percentage")
+    # reset wipes the weights
+    pg.click("nav button[data-view=menu]"); pg.click("#btn-reset"); pg.click("#btn-reset-yes")
+    st = state(pg)
+    check(st["startWeight"] is None and st["weighIns"] == [], "reset wipes start weight and weigh-ins")
+    check(errors == [], "no page errors (progress): " + "; ".join(errors))
+    ctx.close()
+
+    # Part 6: a fresh install starts with no weights, and the help sheet mentions Progress
+    ctx = b.new_context(viewport={"width": 390, "height": 800}, color_scheme="dark")
+    pg = ctx.new_page(); errors = []
+    pg.on("pageerror", lambda e: errors.append(str(e)))
+    pg.clock.install(time="2026-11-20T09:00:00")
+    pg.goto(url); pg.wait_for_timeout(300)
+    check(pg.evaluate("localStorage.getItem('burnbank.v2')") is None and pg.locator("#p-now").text_content() == "—", "fresh install: nothing stored, no start weight")
+    pg.click("nav button[data-view=progress]")
+    check(pg.locator("#p-weeksempty").is_visible() and pg.locator("#p-avg b.na").count() == 15, "fresh: weeks empty, all averages '—'")
+    pg.click("nav button[data-view=today]"); pg.click("#btn-help")
+    check("Progress" in pg.locator("#help").inner_text(), "help sheet has a Progress section")
+    check(errors == [], "no page errors (fresh progress): " + "; ".join(errors))
     ctx.close()
     b.close()
 

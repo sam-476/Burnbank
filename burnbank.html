@@ -1,15 +1,15 @@
 <title>Burnbank</title>
 <style>
-/* Layout: one-screen phone app. Big ticking balance on top, log below, four tabs at the bottom.
+/* Layout: one-screen phone app. Big ticking balance on top, log below, five tabs at the bottom.
    Colour comes from tokens. The base set is the Dark theme ("Cloud": gray with a soft cloud layer, cream type,
    gold accent); Simple white and Steam override it from the "Themes" block below. All three are fixed: none follows
-   the phone's light/dark setting. The cloud layer is an inline SVG (fractal noise) tiled at 600px; no image files. */
+   the phone's light/dark setting. The cloud layer is an inline SVG (fractal noise), one square tile at least the size of the screen (no seam); no image files. */
 :root{
   --bg:#525252; --surface:#474747; --raise:#3E3E3E; --fg:#F3EEE1; --muted:#D6D1C5; --line:#6C6C6C;
   --accent:#F6BE2E; --accent-ink:#1F1600; --debt:#FF957F; --good:#A2D492; --scrim:rgba(0,0,0,.65);
   --btn-bg:#4A4330; --btn-fg:#F6BE2E; --btn-line:#F6BE2E; --btn2-fg:#F6BE2E; --btn2-line:#6C6C6C;
   --bg-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0045' numOctaves='4' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.60  0 0 0 0 0.60  0 0 0 0 0.60  1.4 0 0 0 -0.50'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23f)'/%3E%3C/svg%3E"),linear-gradient(180deg,#5B5B5B 0%,#444444 100%);
-  --bg-size:600px 600px,auto; --bg-repeat:repeat,no-repeat;
+  --bg-size:max(600px,100vw,100vh) max(600px,100vw,100vh),auto; --bg-repeat:no-repeat,no-repeat;
   --mono:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
   color-scheme:dark;
@@ -97,7 +97,7 @@ p{margin:0}
 form.add{display:flex;flex-direction:column;gap:10px}
 .row{display:flex;gap:8px}
 .row>*{min-width:0}
-input[type=number],input[type=text],textarea{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
+input[type=number],input[type=text],input[type=date],textarea{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
 input[type=number]{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:18px}
 ::placeholder{color:var(--muted);opacity:.7}
 .kcal{flex:0 0 42%}
@@ -173,6 +173,38 @@ select{width:100%;background:var(--surface);border:1px solid var(--line);border-
 .chart .grid{stroke:var(--line);stroke-dasharray:2 3}
 .msum{display:flex;justify-content:space-between;gap:12px;font-size:14px}
 .msum b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* Progress */
+input[type=date]{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:15px;min-height:46px}
+.ranges{display:flex;gap:6px}
+.ranges .chip{padding:5px 11px;font-size:12px;font-weight:600}
+.chart .est{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.chart .proj{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:5 4;stroke-linecap:round;opacity:.8}
+.chart .act{fill:none;stroke:var(--fg);stroke-width:1.2;opacity:.4}
+.chart .dot{fill:var(--fg);stroke:var(--surface);stroke-width:1.5}
+.chart .goalline{stroke:var(--good);stroke-width:1.5;stroke-dasharray:1.5 3.5;stroke-linecap:round}
+.chart text.goaltxt{fill:var(--good)}
+.chart .todayline{stroke:var(--line)}
+.chart .mark{stroke:var(--muted);stroke-width:1;stroke-dasharray:2 2}
+.chart .markdot{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+#p-svg{touch-action:pan-y;cursor:crosshair}
+.readout{font-size:13px;text-align:center;min-height:1.4em}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:12px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;border-top:2px solid var(--accent)}
+.legend i.proj{border-top-style:dashed}
+.legend i.dot{width:8px;height:8px;border:0;border-radius:50%;background:var(--fg)}
+.legend i.goal{border-top:2px dotted var(--good)}
+.avg{display:grid;grid-template-columns:1fr repeat(3,auto);gap:8px 14px;font-size:14px;align-items:baseline}
+.avg .h{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right}
+.avg b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.avg b.na{color:var(--muted);font-weight:500}
+.kv .sub{font-size:13px;color:var(--muted)}
+.wlist li{grid-template-columns:64px 1fr auto;cursor:default;padding-block:9px}
+.wlist .l{white-space:normal;display:flex;flex-direction:column;line-height:1.3}
+.wlist .l small{font-size:12px;color:var(--muted)}
+.wlist .k{display:flex;gap:8px;align-items:center}
+.xbtn{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--raise);color:var(--muted);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
 
 /* Menu */
 textarea{font-family:var(--mono);font-size:12px;min-height:84px;resize:vertical}
@@ -323,6 +355,94 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   <p class="note">Monday to Sunday, closed days only. Today's balance counts once the day closes at midnight; until then it's pending.</p>
 </main>
 
+<main id="view-progress" hidden>
+  <h1>Progress</h1>
+  <div class="hero" id="p-hero">
+    <span class="muted">Weight now, from calories</span>
+    <div class="big num accent" id="p-now">—</div>
+    <span class="muted" id="p-herosub">Add your starting weight below to see the chart.</span>
+  </div>
+  <section class="card" id="p-chartcard" hidden>
+    <div class="mhead">
+      <span class="title">Weight</span>
+      <div class="ranges" id="p-ranges" role="group" aria-label="Range">
+        <button type="button" class="chip" data-r="28" aria-pressed="true">4W</button>
+        <button type="button" class="chip" data-r="84" aria-pressed="false">12W</button>
+        <button type="button" class="chip" data-r="0" aria-pressed="false">All</button>
+      </div>
+    </div>
+    <svg class="chart" id="p-svg" viewBox="0 0 340 190" role="img" aria-label="Weight: calorie estimate, weigh-ins and where this rate leads"></svg>
+    <p class="readout num" id="p-readout"></p>
+    <div class="legend">
+      <span><i></i>Calories</span>
+      <span><i class="dot"></i>Scale</span>
+      <span><i class="proj"></i>At this rate</span>
+      <span id="p-leggoal"><i class="goal"></i>Goal</span>
+    </div>
+  </section>
+  <section class="card" id="p-statscard" hidden>
+    <h2>Weight</h2>
+    <div class="kv">
+      <span>Start <span class="sub" id="p-startdate"></span></span><b id="p-start">—</b>
+      <span>Now, from calories</span><b id="p-est">—</b>
+      <span>Change so far</span><b id="p-change">—</b>
+      <span>Rate <span class="sub">(last 14 days)</span></span><b id="p-rate">—</b>
+      <span id="p-goalwl">Goal weight</span><b id="p-goalw">—</b>
+      <span id="p-leftl">Left to goal</span><b id="p-left">—</b>
+      <span id="p-etal">Goal around</span><b id="p-eta">—</b>
+    </div>
+  </section>
+  <section class="card" id="p-acccard" hidden>
+    <h2>Scale vs calories</h2>
+    <div class="kv">
+      <span>Last weigh-in <span class="sub" id="p-lastdate"></span></span><b id="p-last">—</b>
+      <span>Calories said</span><b id="p-said">—</b>
+      <span>Difference</span><b id="p-diff">—</b>
+      <span>Scale change vs estimate</span><b id="p-share">—</b>
+    </div>
+    <p class="note" id="p-accnote">Scale weight swings 1–2 kg day to day with water and food, so judge the gap over weeks, not days.</p>
+  </section>
+  <section class="card" id="p-weighcard">
+    <h2>Log a weigh-in</h2>
+    <form class="field" id="f-weigh" autocomplete="off">
+      <div class="unitrow">
+        <input type="number" id="in-wkg" inputmode="decimal" min="0" step="0.1" placeholder="Weight">
+        <span class="u" id="p-wunit">kg</span>
+      </div>
+      <div class="unitrow">
+        <input type="date" id="in-wdate" aria-label="Date">
+        <button class="btn primary" type="submit" id="btn-weigh">Save</button>
+      </div>
+      <p class="note">Optional. Same time of day each time, ideally the morning. One per day; saving the same day again replaces it. The calorie line never moves to match the scale, so the comparison stays honest.</p>
+    </form>
+    <ul class="list wlist" id="p-weighs"></ul>
+  </section>
+  <section class="card">
+    <h2>Averages</h2>
+    <div class="avg" id="p-avg"></div>
+    <p class="note">Per logged day, closed days only. Protein counts days where you entered it.</p>
+  </section>
+  <section class="sec">
+    <h2>Weeks</h2>
+    <ul class="list hist" id="p-weeks"></ul>
+    <div class="empty" id="p-weeksempty">No closed days yet.</div>
+  </section>
+  <section class="card" id="p-startcard">
+    <h2>Starting weight</h2>
+    <form class="field" id="f-start" autocomplete="off">
+      <div class="unitrow">
+        <input type="number" id="in-sw" inputmode="decimal" min="0" step="0.1" placeholder="Weight">
+        <span class="u" id="p-swunit">kg</span>
+      </div>
+      <div class="unitrow">
+        <input type="date" id="in-swdate" aria-label="On">
+        <button class="btn primary" type="submit" id="btn-start">Save</button>
+      </div>
+      <p class="note" id="p-startnote">Your weight on the day you started. From here the estimate moves only with your calories (7,700 kcal per kg).</p>
+    </form>
+  </section>
+</main>
+
 <main id="view-macros" hidden>
   <h1>Macros &amp; Supplements</h1>
   <div class="hero">
@@ -449,7 +569,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   <section>
     <button class="btn danger full" type="button" id="btn-reset">Reset everything</button>
     <div id="reset-box" class="confirm" hidden>
-      <p>This wipes the log, history, goal and start date. There's no undo.</p>
+      <p>This wipes the log, history, goal, weights and start date. There's no undo.</p>
       <div class="row">
         <button class="btn full" type="button" id="btn-reset-no">Keep my data</button>
         <button class="btn danger full" type="button" id="btn-reset-yes">Yes, reset</button>
@@ -462,6 +582,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 <nav class="tabs" aria-label="Sections">
   <button type="button" data-view="today" aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Today</button>
   <button type="button" data-view="goal"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>Goal</button>
+  <button type="button" data-view="progress"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Progress</button>
   <button type="button" data-view="macros"><svg viewBox="0 0 24 24"><g transform="rotate(-45 12 12)"><rect x="3" y="8.5" width="18" height="7" rx="3.5"/><path d="M12 8.5v7"/></g></svg>Macros</button>
   <button type="button" data-view="menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Menu</button>
 </nav>
@@ -515,6 +636,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       <p>The day closes at whatever you finished on and goes into Total saved. Next morning the app shows what you banked. A day only counts if you logged something, so on a fasted day log 0.</p></div>
     <div class="how"><h4>Goal, no scale</h4>
       <p>Set the weight you want to lose. 1 kg of fat is about 7,700 kcal, so Total saved becomes a progress bar and a weight estimate. Scales lie day to day; this doesn't.</p></div>
+    <div class="how"><h4>Progress</h4>
+      <p>Add your starting weight once and Progress draws where your calories say you are, plus a dashed line for where this rate (your last 14 days) takes you. Weigh-ins are optional: log one whenever you step on a scale. The dots are the scale, the line is the calories, and the gap shows how close your counting is. Averages and week-by-week totals are there too.</p></div>
     <div class="how"><h4>Macros and supplements</h4>
       <p>Tick "Advanced" when adding food to enter protein (carbs and fat if you like). The Macros tab shows today's totals and lets you tick the supplements you took. None of it changes your balance.</p></div>
     <div class="how"><h4>Little things</h4>
@@ -555,7 +678,17 @@ function newSupp(){return {vit:false,other:false}}
 
 function fresh(){
   var k=dateKey(new Date());
-  return {tdee:2400,unit:'kg',goalKg:0,startDate:k,todayKey:k,today:{entries:[],supp:newSupp()},history:[],favs:[],recap:null,notif:true,theme:'dark',adv:false,moveSeen:false,calc:null};
+  return {tdee:2400,unit:'kg',goalKg:0,startDate:k,todayKey:k,today:{entries:[],supp:newSupp()},history:[],favs:[],recap:null,notif:true,theme:'dark',adv:false,moveSeen:false,calc:null,startWeight:null,weighIns:[]};
+}
+/* Weights are stored in kg. startWeight {date,kg} anchors the calorie estimate; weighIns [{date,kg}] are scale readings, one per day. */
+function isKey(k){return typeof k==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(k)&&!isNaN(keyToDate(k))}
+function okKg(v){return typeof v==='number'&&isFinite(v)&&v>=20&&v<=400}
+function fixWeights(o){
+  var sw=o.startWeight;
+  o.startWeight=(sw&&typeof sw==='object'&&isKey(sw.date)&&okKg(sw.kg))?{date:sw.date,kg:sw.kg}:null;
+  var src=Array.isArray(o.weighIns)?o.weighIns:[],byDate={};
+  for(var i=0;i<src.length;i++){var w=src[i];if(w&&isKey(w.date)&&okKg(w.kg))byDate[w.date]={date:w.date,kg:w.kg}}
+  o.weighIns=Object.keys(byDate).sort().map(function(k){return byDate[k]});
 }
 /* The TDEE calculator's last inputs, kept so they can be reopened and recalculated; null until first used. */
 function fixCalc(c){
@@ -596,6 +729,7 @@ function upgrade(o){
   if(typeof o.adv!=='boolean')o.adv=false;
   if(typeof o.moveSeen!=='boolean')o.moveSeen=false;
   o.calc=fixCalc(o.calc);
+  fixWeights(o);
   if(!o.today||typeof o.today!=='object')o.today={entries:[]};
   fixDay(o.today);
   for(var j=0;j<o.history.length;j++)fixDay(o.history[j]);
@@ -646,7 +780,7 @@ function rollover(nowKey){
     S.recap={date:S.todayKey,net:dayNet(d)};
   }
   S.todayKey=nowKey;S.today={entries:[],supp:newSupp()};chartMonth=null;save();
-  renderGoal();renderMacros();renderMenu();renderRecap();renderMove();
+  renderGoal();renderProgress();renderMacros();renderMenu();renderRecap();renderMove();
 }
 function syncDay(){var k=dateKey(new Date());if(k!==S.todayKey)rollover(k)}
 
@@ -991,6 +1125,282 @@ $('f-goal').addEventListener('submit',function(ev){
   save();renderGoal();toast('Goal set');$('in-goal').blur();
 });
 
+/* ---------- Progress: calorie estimate vs scale, projection at the recent rate, averages, weeks ----------
+   The estimate starts at the starting weight and moves only with closed days' nets (7,700 kcal per kg, 3,500 per lb),
+   so it never bends to match the scale and the gap between the two stays an honest measure of accuracy.
+   The estimate for a date is that morning: every closed day before it counted, that day not yet. */
+var KG_LB=0.4536;
+var progRange=28,progSel=null,progGeo=null,progLast=null,wdateAuto=null;
+function toU(kg){return S.unit==='lb'?kg/KG_LB:kg}
+function fromU(v){return S.unit==='lb'?v*KG_LB:v}
+function fmtW(v){return v.toFixed(1)+' '+S.unit}
+function fmtWd(v){return Math.abs(v)<0.05?'±0.0 '+S.unit:(v<0?'−':'+')+Math.abs(v).toFixed(1)+' '+S.unit}
+function fmtWeek(k){var w=kcalToUnit(k);return (w<0?'+':'−')+Math.abs(w).toFixed(2)+' '+S.unit}
+function daysBetween(a,b){return Math.round((keyToDate(b)-keyToDate(a))/864e5)}
+function netMap(){var m={},h=loggedDays();for(var i=0;i<h.length;i++)m[h[i].date]=dayNet(h[i]);return m}
+/* One value per calendar day, from the starting weight's date up to this morning. */
+function estSeries(){
+  var sw=S.startWeight;if(!sw)return [];
+  var m=netMap(),kpu=kcalPerUnit(),w=toU(sw.kg),out=[],d=sw.date<=S.todayKey?sw.date:S.todayKey;
+  while(d<=S.todayKey){out.push({date:d,w:w});if(m[d]!=null)w-=m[d]/kpu;d=addDays(d,1)}
+  return out;
+}
+function estOn(series,key){if(!series.length||key<series[0].date)return null;var i=daysBetween(series[0].date,key);return i<series.length?series[i].w:null}
+/* Average net per calendar day over the last 14 closed days (unlogged days count as 0, the same as the estimate line),
+   never reaching back before the first logged day or the starting weight. Needs at least 3 logged days. */
+function recentRate(){
+  var h=loggedDays();if(!h.length)return null;
+  var end=addDays(S.todayKey,-1),from=addDays(S.todayKey,-14),first=h[0].date;
+  if(S.startWeight&&S.startWeight.date>first)first=S.startWeight.date;
+  if(from<first)from=first;
+  if(from>end)return null;
+  var t=0,n=0;
+  for(var i=0;i<h.length;i++)if(h[i].date>=from&&h[i].date<=end){t+=dayNet(h[i]);n++}
+  if(n<3)return null;
+  return {perDay:t/(daysBetween(from,end)+1),logged:n};
+}
+function goalWeight(){return (S.startWeight&&S.goalKg>0)?toU(S.startWeight.kg)-goalKcal()/kcalPerUnit():null}
+function weightError(v){
+  var lb=S.unit==='lb';
+  if(isNaN(v))return 'Enter a weight';
+  if(lb?(v<65||v>660):(v<30||v>300))return lb?'Weight should be between 65 and 660 lb':'Weight should be between 30 and 300 kg';
+  return null;
+}
+function inForm(id){var a=document.activeElement;return !!(a&&$(id).contains(a))}
+function setKv(id,txt){$(id).textContent=txt}
+function showPair(lid,vid,on){$(lid).hidden=!on;$(vid).hidden=!on}
+
+function renderProgress(){
+  var sw=S.startWeight,u=S.unit,today=S.todayKey,kpu=kcalPerUnit();
+  $('p-wunit').textContent=u;$('p-swunit').textContent=u;
+  $('p-startnote').textContent='Your weight on the day you started. From here the estimate moves only with your calories ('+fmt(kpu)+' kcal per '+u+').';
+  $('p-accnote').textContent='100% means the scale moved exactly as much as your calories said. Scale weight swings '+(u==='lb'?'2–4 lb':'1–2 kg')+' day to day with water and food, so judge it over weeks, not days.';
+  $('in-wdate').max=today;$('in-swdate').max=today;
+  if(!$('in-wdate').value||$('in-wdate').value===wdateAuto||$('in-wdate').value>today){$('in-wdate').value=today;wdateAuto=today}
+  if(!inForm('f-start')){
+    $('in-sw').value=sw?+toU(sw.kg).toFixed(1):'';
+    $('in-swdate').value=sw?sw.date:(S.startDate<=today?S.startDate:today);
+  }
+  /* Without a starting weight the setup card sits right under the hero; afterwards it moves to the bottom. */
+  var view=$('view-progress'),card=$('p-startcard');
+  if(!sw)view.insertBefore(card,$('p-hero').nextSibling);else if(view.lastElementChild!==card)view.appendChild(card);
+  $('p-chartcard').hidden=!sw;$('p-statscard').hidden=!sw;$('p-weighcard').hidden=!sw;
+  renderAverages();renderWeeks();
+  if(!sw){
+    $('p-now').textContent='—';$('p-herosub').textContent='Add your starting weight below to see the chart.';
+    $('p-acccard').hidden=true;progLast=null;return;
+  }
+  var series=estSeries(),base=toU(sw.kg),now=series[series.length-1].w,r=recentRate(),gw=goalWeight();
+  $('p-now').textContent=fmtW(now);
+  $('p-herosub').textContent='Started at '+fmtW(base)+' on '+fmtShort(sw.date)+' · '+fmtWd(now-base)+' so far';
+  setKv('p-start',fmtW(base));setKv('p-startdate',fmtShort(sw.date));
+  setKv('p-est',fmtW(now));setKv('p-change',fmtWd(now-base));
+  setKv('p-rate',r?fmtWd(-r.perDay*7/kpu)+'/week':'Needs 3 logged days');
+  var hasGoal=gw!=null;
+  showPair('p-goalwl','p-goalw',hasGoal);showPair('p-leftl','p-left',hasGoal);showPair('p-etal','p-eta',hasGoal);
+  $('p-leggoal').hidden=!hasGoal;
+  if(hasGoal){
+    setKv('p-goalw',fmtW(gw));
+    if(now<=gw){setKv('p-left','Reached');setKv('p-eta','Reached')}
+    else{
+      setKv('p-left',fmtW(now-gw));
+      var eta='Not at this rate';
+      if(r&&r.perDay>0){var d=Math.ceil((now-gw)*kpu/r.perDay-1e-6);if(d<=3650)eta=fmtShort(addDays(today,d))+(d>=28?' '+keyToDate(addDays(today,d)).getFullYear():'')+' · ~'+(d<14?d+(d===1?' day':' days'):Math.round(d/7)+' weeks')}
+      else if(!r)eta='Needs 3 logged days';
+      setKv('p-eta',eta);
+    }
+  }
+  /* Scale vs calories: the latest weigh-in on or after the start, against the estimate for that morning. */
+  var comp=S.weighIns.filter(function(w){return w.date>=sw.date&&w.date<=today});
+  $('p-acccard').hidden=!comp.length;
+  if(comp.length){
+    var last=comp[comp.length-1],act=toU(last.kg),said=estOn(series,last.date),diff=act-said;
+    setKv('p-last',fmtW(act));setKv('p-lastdate',fmtShort(last.date));
+    setKv('p-said',fmtW(said));
+    setKv('p-diff',fmtWd(diff)+(Math.abs(diff)<0.05?'':diff>0?' · scale heavier':' · scale lighter'));
+    var estCh=said-base,actCh=act-base;
+    setKv('p-share',Math.abs(estCh)*kpu>=KCAL_KG/2?Math.round(actCh/estCh*100)+'%':'Too early to tell');
+  }
+  /* Weigh-in list, newest first */
+  var ul=$('p-weighs');ul.innerHTML='';ul.hidden=!S.weighIns.length;
+  for(var i=S.weighIns.length-1;i>=0;i--){
+    var w=S.weighIns[i],e=estOn(series,w.date),li=document.createElement('li');
+    var t=document.createElement('span');t.className='t';t.textContent=fmtShort(w.date);
+    var l=document.createElement('span');l.className='l';l.textContent=fmtW(toU(w.kg));
+    if(e!=null){var sm=document.createElement('small');sm.textContent='calories '+e.toFixed(1);l.appendChild(sm)}
+    var k=document.createElement('span');k.className='k';
+    var dv=document.createElement('span');dv.textContent=e!=null?fmtWd(toU(w.kg)-e):'';
+    var x=document.createElement('button');x.type='button';x.className='xbtn';x.textContent='×';x.dataset.date=w.date;x.setAttribute('aria-label','Remove weigh-in '+fmtShort(w.date));
+    k.appendChild(dv);k.appendChild(x);li.appendChild(t);li.appendChild(l);li.appendChild(k);ul.appendChild(li);
+  }
+  progLast={series:series,r:r,gw:gw};
+  renderProgChart();
+}
+
+function renderProgChart(){
+  if(!progLast)return;
+  var series=progLast.series,r=progLast.r,gw=progLast.gw,today=S.todayKey,kpu=kcalPerUnit();
+  var x0=series[0].date;
+  if(progRange){var c=addDays(today,-progRange);if(c>x0)x0=c}
+  var past=daysBetween(x0,today),fut=Math.max(14,past),x1=addDays(today,fut),span=past+fut;
+  var now=series[series.length-1].w;
+  var pts=series.filter(function(p){return p.date>=x0});
+  var acts=S.weighIns.filter(function(w){return w.date>=x0&&w.date<=today}).map(function(w){return {date:w.date,w:toU(w.kg)}});
+  var proj=null;
+  if(r){
+    var slope=-r.perDay/kpu,end=fut,endW=now+slope*fut;
+    if(gw!=null&&now>gw&&endW<gw){end=(gw-now)/slope;endW=gw}
+    proj={d:end,w:endW,slope:slope};
+  }
+  var ys=pts.map(function(p){return p.w}).concat(acts.map(function(a){return a.w}));
+  if(proj)ys.push(proj.w);if(gw!=null)ys.push(gw);
+  var lo=Math.min.apply(null,ys),hi=Math.max.apply(null,ys),minR=S.unit==='lb'?2:1;
+  if(hi-lo<minR){var mid=(hi+lo)/2;lo=mid-minR/2;hi=mid+minR/2}
+  var padY=(hi-lo)*0.1;lo-=padY;hi+=padY;
+  var steps=[0.2,0.5,1,2,5,10,20,50,100],step=steps[steps.length-1];
+  for(var si=0;si<steps.length;si++)if((hi-lo)/steps[si]<=4.5){step=steps[si];break}
+  var W=340,H=190,L=36,R=8,T=10,B=22,cw=W-L-R,ch=H-T-B;
+  function X(i){return L+i/span*cw}
+  function Y(v){return T+(hi-v)/(hi-lo)*ch}
+  function xi(key){return daysBetween(x0,key)}
+  var s='';
+  for(var g=Math.ceil(lo/step)*step;g<=hi+1e-9;g+=step){
+    var gy=Y(g).toFixed(1);
+    s+='<line class="grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+gy+'" y2="'+gy+'"/>';
+    s+='<text x="'+(L-4)+'" y="'+(+gy+3.5)+'" text-anchor="end">'+(+g.toFixed(1))+'</text>';
+  }
+  var tx=X(past).toFixed(1);
+  s+='<line class="todayline" x1="'+tx+'" x2="'+tx+'" y1="'+T+'" y2="'+(T+ch)+'"/>';
+  if(gw!=null){
+    var gy2=Y(gw).toFixed(1);
+    s+='<line class="goalline" x1="'+L+'" x2="'+(W-R)+'" y1="'+gy2+'" y2="'+gy2+'"/>';
+    s+='<text class="goaltxt" x="'+(W-R)+'" y="'+(+gy2-4)+'" text-anchor="end">Goal</text>';
+  }
+  if(proj)s+='<path class="proj" d="M'+X(past).toFixed(1)+' '+Y(now).toFixed(1)+'L'+X(past+proj.d).toFixed(1)+' '+Y(proj.w).toFixed(1)+'"/>';
+  if(acts.length>1){
+    var ad='';for(var a=0;a<acts.length;a++)ad+=(a?'L':'M')+X(xi(acts[a].date)).toFixed(1)+' '+Y(acts[a].w).toFixed(1);
+    s+='<path class="act" d="'+ad+'"/>';
+  }
+  var d='';for(var p=0;p<pts.length;p++)d+=(p?'L':'M')+X(xi(pts[p].date)).toFixed(1)+' '+Y(pts[p].w).toFixed(1);
+  s+='<path class="est" d="'+d+'"/>';
+  for(var q=0;q<acts.length;q++)s+='<circle class="dot" cx="'+X(xi(acts[q].date)).toFixed(1)+'" cy="'+Y(acts[q].w).toFixed(1)+'" r="3.6"/>';
+  /* x labels: start, Today, end */
+  var ly=H-6;
+  if(X(past)-L>=52)s+='<text x="'+L+'" y="'+ly+'" text-anchor="start">'+fmtShort(x0)+'</text>';
+  s+='<text x="'+tx+'" y="'+ly+'" text-anchor="'+(X(past)-L<52?'start':'middle')+'">Today</text>';
+  s+='<text x="'+(W-R)+'" y="'+ly+'" text-anchor="end">'+fmtShort(x1)+'</text>';
+  /* the selected day (default today) */
+  var sel=progSel&&progSel>=x0&&progSel<=x1?progSel:today,si2=xi(sel),val=null,parts=[];
+  if(sel<=today){val=estOn(series,sel);if(val!=null)parts.push('calories '+fmtW(val))}
+  else if(proj&&si2-past<=proj.d+1e-9){val=now+proj.slope*(si2-past);parts.push('at this rate '+fmtW(val))}
+  for(var z=0;z<acts.length;z++)if(acts[z].date===sel)parts.push('scale '+fmtW(acts[z].w));
+  var mx=X(si2).toFixed(1);
+  s+='<line class="mark" x1="'+mx+'" x2="'+mx+'" y1="'+T+'" y2="'+(T+ch)+'"/>';
+  if(val!=null)s+='<circle class="markdot" cx="'+mx+'" cy="'+Y(val).toFixed(1)+'" r="4.5"/>';
+  $('p-svg').innerHTML=s;
+  $('p-readout').textContent=(sel===today?'Today':fmtDate(sel))+' · '+(parts.length?parts.join(' · '):'nothing logged');
+  progGeo={x0:x0,span:span,L:L,cw:cw,W:W};
+  document.querySelectorAll('#p-ranges .chip').forEach(function(b){b.setAttribute('aria-pressed',+b.dataset.r===progRange)});
+}
+function progPick(ev){
+  if(!progGeo)return;
+  var rc=$('p-svg').getBoundingClientRect();if(!rc.width)return;
+  var x=(ev.clientX-rc.left)/rc.width*progGeo.W;
+  var i=Math.round((x-progGeo.L)/progGeo.cw*progGeo.span);
+  i=Math.max(0,Math.min(progGeo.span,i));
+  var k=addDays(progGeo.x0,i);
+  if(k!==progSel){progSel=k;renderProgChart()}
+}
+$('p-svg').addEventListener('pointerdown',progPick);
+$('p-svg').addEventListener('pointermove',function(ev){if(ev.pointerType==='mouse'&&!ev.buttons)return;progPick(ev)});
+$('p-ranges').addEventListener('click',function(ev){
+  var b=ev.target.closest('.chip');if(!b)return;
+  progRange=+b.dataset.r;progSel=null;renderProgChart();
+});
+
+/* Averages per logged day over the last 7 / 30 days and all time (closed days only). */
+function avgWindow(n){
+  var h=loggedDays();if(!h.length)return null;
+  var end=addDays(S.todayKey,-1),from=n?addDays(S.todayKey,-n):h[0].date;
+  if(from<h[0].date)from=h[0].date;
+  var days=daysBetween(from,end)+1;if(days<1)return null;
+  var o={days:days,logged:0,net:0,eat:0,burn:0,prot:null},pt=0,pd=0;
+  for(var i=0;i<h.length;i++){
+    var d=h[i];if(d.date<from||d.date>end)continue;
+    var s=sums(d.entries);o.logged++;o.net+=dayNet(d);o.eat+=s.eaten;o.burn+=s.burned;
+    var m=macroTotals(d.entries);if(m.p!=null){pt+=m.p;pd++}
+  }
+  if(o.logged){o.net/=o.logged;o.eat/=o.logged;o.burn/=o.logged}
+  if(pd)o.prot=pt/pd;
+  return o;
+}
+function renderAverages(){
+  var box=$('p-avg');box.innerHTML='';
+  var cols=[avgWindow(7),avgWindow(30),avgWindow(0)];
+  function cell(txt,cls){var e=document.createElement(cls==='h'||cls==='l'?'span':'b');if(cls==='h')e.className='h';if(cls==='na')e.className='na';e.textContent=txt;box.appendChild(e)}
+  cell('','h');cell('7 days','h');cell('30 days','h');cell('All','h');
+  var rows=[
+    ['Net a day',function(o){return fmtSigned(o.net)}],
+    ['Eaten',function(o){return fmt(o.eat)}],
+    ['Burned',function(o){return fmt(o.burn)}],
+    ['Protein',function(o){return o.prot==null?null:Math.round(o.prot)+' g'}],
+    ['Days logged',function(o){return o.logged+'/'+o.days},true]
+  ];
+  rows.forEach(function(r){
+    cell(r[0],'l');
+    cols.forEach(function(o){
+      var v=(o&&(o.logged||r[2]))?r[1](o):null;
+      if(v==null)cell('—','na');else cell(v);
+    });
+  });
+}
+/* The last 8 Monday-to-Sunday weeks, newest first, not before the first logged day's week. */
+function renderWeeks(){
+  var ul=$('p-weeks');ul.innerHTML='';
+  var h=loggedDays();
+  $('p-weeksempty').hidden=h.length>0;ul.hidden=!h.length;
+  if(!h.length)return;
+  var firstMon=weekBounds(h[0].date)[0],mon=weekBounds(S.todayKey)[0];
+  for(var n=0;n<8&&mon>=firstMon;n++,mon=addDays(mon,-7)){
+    var sun=addDays(mon,6),t=0,c=0;
+    for(var i=0;i<h.length;i++)if(h[i].date>=mon&&h[i].date<=sun){t+=dayNet(h[i]);c++}
+    var li=document.createElement('li');li.style.cursor='default';
+    var a=document.createElement('span');a.className='t';a.textContent=n===0?'This week':fmtShort(mon);
+    var l=document.createElement('span');l.className='l';
+    l.textContent=c?c+(c===1?' day':' days')+' · '+fmtWeek(t):'nothing logged';
+    var k=document.createElement('span');k.className='k'+(c?(t<0?' neg':' pos'):'');k.textContent=c?fmtSigned(t):'—';
+    li.appendChild(a);li.appendChild(l);li.appendChild(k);ul.appendChild(li);
+  }
+}
+
+$('f-start').addEventListener('submit',function(ev){
+  ev.preventDefault();
+  var v=parseFloat($('in-sw').value),d=$('in-swdate').value||S.todayKey,err=weightError(v);
+  if(err){toast(err);return}
+  if(!isKey(d)||d>S.todayKey){toast("The date can't be in the future");return}
+  var first=!S.startWeight;
+  S.startWeight={date:d,kg:Math.round(fromU(v)*1000)/1000};progSel=null;
+  $('in-sw').blur();$('in-swdate').blur();save();renderProgress();
+  if(first)$('view-progress').scrollTop=0;
+  toast('Starting weight saved');
+});
+$('f-weigh').addEventListener('submit',function(ev){
+  ev.preventDefault();
+  var v=parseFloat($('in-wkg').value),d=$('in-wdate').value||S.todayKey,err=weightError(v);
+  if(err){toast(err);return}
+  if(!isKey(d)||d>S.todayKey){toast("The date can't be in the future");return}
+  var replaced=S.weighIns.some(function(w){return w.date===d});
+  S.weighIns=S.weighIns.filter(function(w){return w.date!==d});
+  S.weighIns.push({date:d,kg:Math.round(fromU(v)*1000)/1000});
+  S.weighIns.sort(function(a,b){return a.date<b.date?-1:1});
+  $('in-wkg').value='';$('in-wkg').blur();save();renderProgress();
+  toast(replaced?'Weigh-in replaced':'Weigh-in saved');
+});
+$('p-weighs').addEventListener('click',function(ev){
+  var b=ev.target.closest('button[data-date]');if(!b)return;
+  S.weighIns=S.weighIns.filter(function(w){return w.date!==b.dataset.date});save();renderProgress();toast('Weigh-in removed');
+});
+
 /* ---------- Macros & Supplements (today only; never touches balance or goal) ---------- */
 function macroNode(e){
   var k=document.createElement('span');k.className='k mac';
@@ -1192,7 +1602,7 @@ $('m-themes').addEventListener('click',function(ev){
 function restoreText(txt){
   var o=JSON.parse(txt);
   if(!o||typeof o.tdee!=='number'||!o.today||!Array.isArray(o.history))throw new Error('bad');
-  S=upgrade(o);S.recap=null;S.moveSeen=true;chartMonth=null;openDay=null;listSig=null;
+  S=upgrade(o);S.recap=null;S.moveSeen=true;chartMonth=null;openDay=null;listSig=null;progSel=null;
   save();applyTheme();renderAll();
 }
 $('btn-copy').addEventListener('click',function(){
@@ -1225,14 +1635,14 @@ $('btn-reset-no').addEventListener('click',function(){$('reset-box').hidden=true
 $('btn-reset-yes').addEventListener('click',function(){
   var keep={tdee:S.tdee,unit:S.unit,notif:S.notif,theme:S.theme,adv:S.adv,calc:S.calc};
   S=fresh();S.tdee=keep.tdee;S.unit=keep.unit;S.notif=keep.notif;S.theme=keep.theme;S.adv=keep.adv;S.calc=keep.calc;S.moveSeen=true;
-  chartMonth=null;openDay=null;save();
+  chartMonth=null;openDay=null;progSel=null;save();
   $('reset-box').hidden=true;$('btn-reset').hidden=false;
   renderAll();showView('today');toast('Reset. Fresh start from today.');
 });
 
 /* ---------- Tabs ---------- */
 function showView(name){
-  ['today','goal','macros','menu'].forEach(function(v){$('view-'+v).hidden=v!==name});
+  ['today','goal','progress','macros','menu'].forEach(function(v){$('view-'+v).hidden=v!==name});
   document.querySelectorAll('nav.tabs button').forEach(function(b){
     if(b.dataset.view===name)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
   });
@@ -1246,7 +1656,7 @@ document.querySelector('nav.tabs').addEventListener('click',function(ev){
 var toastTimer=null;
 function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show')},2200)}
 
-function renderAll(){renderFavs();renderToday();renderGoal();renderMacros();renderMenu();renderRecap();renderMove();syncAdv()}
+function renderAll(){renderFavs();renderToday();renderGoal();renderProgress();renderMacros();renderMenu();renderRecap();renderMove();syncAdv()}
 
 S=load();
 applyTheme();
